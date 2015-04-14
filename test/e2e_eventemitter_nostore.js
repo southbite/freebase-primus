@@ -884,7 +884,9 @@ describe('e2e test', function() {
 
 		this.timeout(60000);
 
-		freebase_client.load({config:{host:'localhost', port:testport, secret:test_secret}}, function(e, client){
+		freebase_client.load({
+			plugin:freebase.client_plugins.intra_process, 
+			context:freebaseInstance}, function(e, client){
 
 			if (e)
 				return callback(e);
@@ -925,8 +927,8 @@ describe('e2e test', function() {
 			      //////console.log('RCOUNT');
 
 
-			      console.log(receivedCount);
-			      console.log(sent.length);
+			      //console.log(receivedCount);
+			      //console.log(sent.length);
 
 			      if (receivedCount == sent.length) {
 			        console.timeEnd('timeTest');
@@ -982,12 +984,14 @@ describe('e2e test', function() {
 
 		this.timeout(60000);
 
+		/*
 		freebase_client.load({config:{host:'localhost', port:testport, secret:test_secret}}, function(e, client){
 
 			if (e)
 				return callback(e);
+		*/
 
-			var stressTestClient = client;
+			var stressTestClient = listenerclient;
 
 			setTimeout(function(){
 				
@@ -1023,8 +1027,8 @@ describe('e2e test', function() {
 			      //////console.log('RCOUNT');
 
 
-			      console.log(receivedCount);
-			      console.log(sent.length);
+			      //console.log(receivedCount);
+			      //console.log(sent.length);
 
 			      if (receivedCount == sent.length) {
 			        console.timeEnd('timeTest');
@@ -1072,8 +1076,8 @@ describe('e2e test', function() {
 
 			}, 2000)
 
-			
-		});
+		
+		//});
   });
 
 /*
