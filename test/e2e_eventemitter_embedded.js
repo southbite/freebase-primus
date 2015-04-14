@@ -101,6 +101,63 @@ describe('e2e test', function() {
 		}
 	});
 
+	it('should subscribe to the catch all notification', function(callback) {
+
+		var caught = {};
+
+		this.timeout(10000);
+		
+		listenerclient.onAll(function(e, message){
+
+			if (!caught[message.action])
+				caught[message.action] = 0;
+
+			caught[message.action]++;
+			
+			if (caught['PUT'] == 2 && caught['DELETE'] == 2)
+				callback();
+
+
+		}, function(e){
+
+			if (e)
+				callback(e);
+			else {
+
+				publisherclient.set('/e2e_test1/testsubscribe/data/catch_all', {property1:'property1',property2:'property2',property3:'property3'}, null, function(e, put_result){
+
+					////////////console.log('put_result');
+					////////////console.log(put_result);
+
+					publisherclient.setChild('/e2e_test1/testsubscribe/data/catch_all_array', {property1:'property1',property2:'property2',property3:'property3'}, function(e, post_result){
+
+						////////////console.log('post_result');
+						////////////console.log(post_result);
+
+						publisherclient.remove('/e2e_test1/testsubscribe/data/catch_all', null, function(e, del_result){
+
+							////////////console.log('del_result');
+							////////////console.log(del_result);
+
+							publisherclient.removeChild('/e2e_test1/testsubscribe/data/catch_all_array', post_result.payload._id, function(e, del_ar_result){
+
+								////////////console.log('del_ar_result');
+								////////////console.log(del_ar_result);
+						
+							});
+					
+						});
+					
+					});
+
+				});
+
+			}
+
+		});
+
+	});
+
 	it('the publisher should set new data ', function(callback) {
 		
 		this.timeout(default_timeout);
@@ -249,62 +306,7 @@ describe('e2e test', function() {
 
 	
 
-	it('should subscribe to the catch all notification', function(callback) {
-
-		var caught = {};
-
-		this.timeout(20000);
-		
-		listenerclient.onAll(function(e, message){
-
-			if (!caught[message.action])
-				caught[message.action] = 0;
-
-			caught[message.action]++;
-			
-			if (caught['PUT'] == 2 && caught['DELETE'] == 2)
-				callback();
-
-
-		}, function(e){
-
-			if (e)
-				callback(e);
-			else {
-
-				publisherclient.set('/e2e_test1/testsubscribe/data/catch_all', {property1:'property1',property2:'property2',property3:'property3'}, null, function(e, put_result){
-
-					////////////console.log('put_result');
-					////////////console.log(put_result);
-
-					publisherclient.setChild('/e2e_test1/testsubscribe/data/catch_all_array', {property1:'property1',property2:'property2',property3:'property3'}, function(e, post_result){
-
-						////////////console.log('post_result');
-						////////////console.log(post_result);
-
-						publisherclient.remove('/e2e_test1/testsubscribe/data/catch_all', null, function(e, del_result){
-
-							////////////console.log('del_result');
-							////////////console.log(del_result);
-
-							publisherclient.removeChild('/e2e_test1/testsubscribe/data/catch_all_array', post_result.payload._id, function(e, del_ar_result){
-
-								////////////console.log('del_ar_result');
-								////////////console.log(del_ar_result);
-						
-							});
-					
-						});
-					
-					});
-
-				});
-
-			}
-
-		});
-
-	});
+	
 
 
 	it('the listener should pick up a single delete event', function(callback) {

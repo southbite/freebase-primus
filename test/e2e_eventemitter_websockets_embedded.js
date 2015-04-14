@@ -10,8 +10,8 @@ describe('e2e test', function() {
 	var testport = 8000;
 	var test_secret = 'test_secret';
 	var mode = "embedded";
-	var default_timeout = 4000;
-
+	var default_timeout = 10000;
+	var freebaseInstance = null;
 	/*
 	This test demonstrates starting up the freebase service - 
 	the authentication service will use authTokenSecret to encrypt web tokens identifying
@@ -47,8 +47,12 @@ describe('e2e test', function() {
 						log_component:'prepare'
 					}
 				}, 
-				function(e){
-					callback(e);
+				function(e, freebase){
+					if (e)
+						return callback(e);
+
+					freebaseInstance = freebase;
+					callback();
 				});
 		}catch(e){
 			callback(e);
@@ -68,15 +72,14 @@ describe('e2e test', function() {
 
 		try{
 			//plugin, config, context, 
-			freebase_client.load({config:{host:'localhost', port:testport, secret:test_secret}}, function(e, client){
+			freebase_client.load({plugin:freebase.client_plugins.intra_process, context:freebaseInstance}, function(e, client){
 
 				publisherclient = client;
-
 
 				if (e)
 					return callback(e);
 
-				  
+				freebase_client.load({config:{host:'localhost', port:testport, secret:test_secret}}, function(e, client){
 
 					if (e)
 						return callback(e);
@@ -98,110 +101,40 @@ describe('e2e test', function() {
 		}
 	});
 
-	it('should fail to subscribe to an event', function(callback) {
-
-		this.timeout(default_timeout);
-		subWasSuccessful = true;
-
-    	freebase_client.load({config:{host:'localhost', port:testport, secret:test_secret}}, function(e, badclient){
-
-    		badclient.onMessage('badclient_test', 'error', function(message){
-
-    			console.log('on message called yay');
-
-    			if (message.data.status == 'Authentication failed')
-    				subWasSuccessful = false;
-
-    		}, function(e){
-
-    			badclient.token = 'rubbish';
-	    		badclient.onAll(function(e, message){
-
-					////console.log('on all happened');
-
-				}, function(e){
-
-					if (e)
-						callback(e);
-					else {
-						setTimeout(function(){
-
-							if (subWasSuccessful)
-								callback('unauthorized subscribe was let through');
-							else
-								callback();
-
-						}, 2000);
-					}
-
-				});
-
-    		});
-
-    	});
-
-	});
-
-	it('the listener should pick up a single delete event', function(callback) {
+	it('the publisher should set new data ', function(callback) {
 		
 		this.timeout(default_timeout);
 
 		try{
+			var test_path_end = require('shortid').generate();
 
-				//We put the data we want to delete into the database
-				publisherclient.set('/e2e_test1/testsubscribe/data/delete_me', {property1:'property1',property2:'property2',property3:'property3'}, null, function(e, result){
+			publisherclient.set('e2e_test1/testsubscribe/data/' + test_path_end, {property1:'property1',property2:'property2',property3:'property3'}, {noPublish:true}, function(e, result){
+			
+				console.log('set happened');
+				console.log([e, result]);
 
-					//////console.log('did delete set');
+				if (!e){
+					publisherclient.get('e2e_test1/testsubscribe/data/' + test_path_end, null, function(e, results){
+						console.log('new data results');
+						console.log([e, results]);
 
-					//We listen for the DELETE event
-					listenerclient.on('/e2e_test1/testsubscribe/data/delete_me', 'DELETE', 1, function(e, message){
+						expect(results.payload.length == 1).to.be(true);
+						expect(results.payload[0].data.property1 == 'property1').to.be(true);
 
-						//////console.log('delete message');
-						//////console.log(message);
-
-						//we are looking at the event internals on the listener to ensure our event management is working - because we are only listening for 1
-						//instance of this event - the event listener should have been removed 
-						expect(listenerclient.events['/DELETE@/e2e_test1/testsubscribe/data/delete_me'].length).to.be(0);
-
-						//we needed to have removed a single item
-						expect(message.removed).to.be(1);
-
-						////////////////console.log(message);
+						if (mode != 'embedded')
+							expect(results.payload[0].created == results.payload[0].modified).to.be(true);
 
 						callback(e);
-
-					}, function(e){
-
-						console.log('ON HAS HAPPENED: ' + e);
-
-						if (!e){
-
-							expect(listenerclient.events['/DELETE@/e2e_test1/testsubscribe/data/delete_me'].length).to.be(1);
-
-							//////console.log('subscribed, about to delete');
-
-							//We perform the actual delete
-							publisherclient.remove('/e2e_test1/testsubscribe/data/delete_me', null, function(e, result){
-
-								
-									//////console.log('REMOVE HAPPENED!!!');
-									//////console.log(e);
-									//////console.log(result);
-								
-
-								////////////////console.log('put happened - listening for result');
-							});
-						}else
-							callback(e);
 					});
-				});
-
-			
+				}else
+					callback(e);
+			});
 
 		}catch(e){
 			callback(e);
 		}
 	});
+
 
 	it('should set data, and then merge a new document into the data without overwriting old fields', function(callback) {
 		
@@ -250,41 +183,6 @@ describe('e2e test', function() {
 			callback(e);
 		}
 	});
-
-	it('the publisher should set new data ', function(callback) {
-		
-		this.timeout(default_timeout);
-
-		try{
-			var test_path_end = require('shortid').generate();
-
-			publisherclient.set('e2e_test1/testsubscribe/data/' + test_path_end, {property1:'property1',property2:'property2',property3:'property3'}, {noPublish:true}, function(e, result){
-			
-				console.log('set happened');
-				console.log([e, result]);
-
-				if (!e){
-					publisherclient.get('e2e_test1/testsubscribe/data/' + test_path_end, null, function(e, results){
-						console.log('new data results');
-						console.log([e, results]);
-
-						expect(results.payload.length == 1).to.be(true);
-						expect(results.payload[0].data.property1 == 'property1').to.be(true);
-
-						if (mode != 'embedded')
-							expect(results.payload[0].created == results.payload[0].modified).to.be(true);
-
-						callback(e);
-					});
-				}else
-					callback(e);
-			});
-
-		}catch(e){
-			callback(e);
-		}
-	});
-
 
 
 	it('should search for a complex object', function(callback) {
@@ -348,9 +246,6 @@ describe('e2e test', function() {
 
 	});
 
-	
-
-	
 
 	
 
@@ -411,8 +306,69 @@ describe('e2e test', function() {
 
 	});
 
+
+	it('the listener should pick up a single delete event', function(callback) {
+		
+		this.timeout(default_timeout);
+
+		try{
+
+				//We put the data we want to delete into the database
+				publisherclient.set('/e2e_test1/testsubscribe/data/delete_me', {property1:'property1',property2:'property2',property3:'property3'}, null, function(e, result){
+
+					//////console.log('did delete set');
+
+					//We listen for the DELETE event
+					listenerclient.on('/e2e_test1/testsubscribe/data/delete_me', 'DELETE', 1, function(e, message){
+
+						//////console.log('delete message');
+						//////console.log(message);
+
+						//we are looking at the event internals on the listener to ensure our event management is working - because we are only listening for 1
+						//instance of this event - the event listener should have been removed 
+						expect(listenerclient.events['/DELETE@/e2e_test1/testsubscribe/data/delete_me'].length).to.be(0);
+
+						//we needed to have removed a single item
+						expect(message.removed).to.be(1);
+
+						////////////////console.log(message);
+
+						callback(e);
+
+					}, function(e){
+
+						//////console.log('ON HAS HAPPENED: ' + e);
+
+						if (!e){
+
+							expect(listenerclient.events['/DELETE@/e2e_test1/testsubscribe/data/delete_me'].length).to.be(1);
+
+							//////console.log('subscribed, about to delete');
+
+							//We perform the actual delete
+							publisherclient.remove('/e2e_test1/testsubscribe/data/delete_me', null, function(e, result){
+
+								
+									//////console.log('REMOVE HAPPENED!!!');
+									//////console.log(e);
+									//////console.log(result);
+								
+
+								////////////////console.log('put happened - listening for result');
+							});
+						}else
+							callback(e);
+					});
+				});
+
+			
+
+		}catch(e){
+			callback(e);
+		}
+	});
 	
-	
+
 	it('should delete some test data', function(callback) {
 
 		this.timeout(default_timeout);
@@ -530,6 +486,8 @@ describe('e2e test', function() {
 		});
 
 	});
+
+
 
 //	We set the listener client to listen for a PUT event according to a path, then we set a value with the publisher client.
 
@@ -807,6 +765,8 @@ describe('e2e test', function() {
 	});
 
 
+
+
 	it('should tag some test data', function(callback) {
 
 		var randomTag = require('shortid').generate();
@@ -872,6 +832,7 @@ describe('e2e test', function() {
 		});
 
 	});	
+
 
 	it('should handle sequences of events by writing as soon as possible', function (callback) {
 
@@ -971,6 +932,7 @@ describe('e2e test', function() {
 		});
   });
 
+
 it('should handle sequences of events by when the previous one is done', function (callback) {
 
     this.timeout(120000);
@@ -1043,4 +1005,45 @@ it('should handle sequences of events by when the previous one is done', functio
 		});
   });
 
+	it('should fail to subscribe to an event', function(callback) {
+
+		this.timeout(default_timeout);
+		subWasSuccessful = true;
+
+    	freebase_client.load({config:{host:'localhost', port:testport, secret:test_secret}}, function(e, badclient){
+
+    		badclient.onMessage('badclient_test', 'error', function(message){
+
+    			if (message.data.status == 'Authentication failed')
+    				subWasSuccessful = false;
+
+    		}, function(e){
+
+    			badclient.token = 'rubbish';
+	    		badclient.onAll(function(e, message){
+
+					////console.log('on all happened');
+
+				}, function(e){
+
+					if (e)
+						callback(e);
+					else {
+						setTimeout(function(){
+
+							if (subWasSuccessful)
+								callback('unauthorized subscribe was let through');
+							else
+								callback();
+
+						}, 3000);
+					}
+
+				});
+
+    		});
+
+    	});
+
+	});
 });

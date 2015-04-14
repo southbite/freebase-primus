@@ -11,6 +11,7 @@ describe('e2e test', function() {
 	var test_secret = 'test_secret';
 	var mode = "embedded";
 	var default_timeout = 4000;
+	var freebaseInstance = null;
 
 	/*
 	This test demonstrates starting up the freebase service - 
@@ -47,8 +48,12 @@ describe('e2e test', function() {
 						log_component:'prepare'
 					}
 				}, 
-				function(e){
-					callback(e);
+				function(e, freebase){
+					if (e)
+						return callback(e);
+
+					freebaseInstance = freebase;
+					callback();
 				});
 		}catch(e){
 			callback(e);
@@ -68,35 +73,35 @@ describe('e2e test', function() {
 
 		try{
 			//plugin, config, context, 
-			freebase_client.load({config:{host:'localhost', port:testport, secret:test_secret}}, function(e, client){
+			//plugin, config, context, 
+			freebase_client.load({plugin:freebase.client_plugins.intra_process, context:freebaseInstance}, function(e, client){
 
 				publisherclient = client;
-
 
 				if (e)
 					return callback(e);
 
-				  
+				freebase_client.load({plugin:freebase.client_plugins.intra_process, context:freebaseInstance}, function(e, client){
 
 					if (e)
 						return callback(e);
 
 					listenerclient = client;
+					callback(e);
 
-					setTimeout(function(){
-						callback(e);
-					}, 2000)
 
 					
 				});
-
 
 			});
 
 		}catch(e){
 			callback(e);
 		}
+
 	});
+
+	/*
 
 	it('should fail to subscribe to an event', function(callback) {
 
@@ -873,6 +878,8 @@ describe('e2e test', function() {
 
 	});	
 
+	*/
+
 	it('should handle sequences of events by writing as soon as possible', function (callback) {
 
 		this.timeout(60000);
@@ -918,8 +925,8 @@ describe('e2e test', function() {
 			      //////console.log('RCOUNT');
 
 
-			      //////console.log(receivedCount);
-			      //////console.log(sent.length);
+			      console.log(receivedCount);
+			      console.log(sent.length);
 
 			      if (receivedCount == sent.length) {
 			        console.timeEnd('timeTest');
@@ -946,7 +953,7 @@ describe('e2e test', function() {
 
 				      publisherclient.set('/e2e_test1/testsubscribe/sequence', {
 				        property1: sent[count]
-				      }, {excludeId:1}, function (e, result) {
+				      }, {excludeId:true}, function (e, result) {
 
 				      	//////console.log(e);
 				      	//////console.log(result);
@@ -970,6 +977,106 @@ describe('e2e test', function() {
 			
 		});
   });
+
+	it('should handle sequences of events by writing as soon as possible, without storing', function (callback) {
+
+		this.timeout(60000);
+
+		freebase_client.load({config:{host:'localhost', port:testport, secret:test_secret}}, function(e, client){
+
+			if (e)
+				return callback(e);
+
+			var stressTestClient = client;
+
+			setTimeout(function(){
+				
+			    var count = 0;
+			    var expected=1000;
+			    var receivedCount=0;
+
+			    var received = {};
+			    var sent = [expected];
+
+			    for (var i=0;i<expected;i++) {
+			      sent[i] = require('shortid').generate();
+			    }
+
+			    //////console.log('about to go');
+			    //////console.log(sent);
+
+			    //first listen for the change
+			    stressTestClient.on('/e2e_test1/testsubscribe/sequence3', 'PUT', 0, function (e, message) {
+
+			      //////console.log('Event happened', message);
+
+			      if (e)
+			      	return callback(e);
+
+			      receivedCount++;
+
+			      if (received[message.data.property1])
+			      	received[message.data.property1] = received[message.data.property1] + 1;
+			      else
+			      	received[message.data.property1] = 1;
+
+			      //////console.log('RCOUNT');
+
+
+			      console.log(receivedCount);
+			      console.log(sent.length);
+
+			      if (receivedCount == sent.length) {
+			        console.timeEnd('timeTest');
+			        expect(Object.keys(received).length == expected).to.be(true);
+			        //////console.log(received);
+
+			        callback();
+			      }
+			      
+			    }, function (e) {
+
+			      //////console.log('ON HAS HAPPENED: ' + e);
+
+			      if (!e) {
+
+			      	 expect(stressTestClient.events['/PUT@/e2e_test1/testsubscribe/sequence3'].length).to.be(1);
+			      	 console.time('timeTest');
+
+			      	 while(count < expected){
+
+			      	 	//////console.log(count);
+			      	 	//////console.log(expected);
+			      	 	//////console.log(sent[count]);
+
+				      publisherclient.set('/e2e_test1/testsubscribe/sequence3', {
+				        property1: sent[count]
+				      }, {noStore:true}, function (e, result) {
+
+				      	//////console.log(e);
+				      	//////console.log(result);
+
+				      	if (e)
+				      		return callback(e);
+
+				      		
+				      });
+
+				      count++;
+				    }
+
+			      }
+			      else
+			        callback(e);
+			    });
+
+			}, 2000)
+
+			
+		});
+  });
+
+/*
 
 it('should handle sequences of events by when the previous one is done', function (callback) {
 
@@ -1031,7 +1138,7 @@ it('should handle sequences of events by when the previous one is done', functio
 			      ////////console.log('putting data: ', count);
 			      publisherclient.set('/e2e_test1/testsubscribe/sequence1', {
 			        property1: sent[count++]
-			      }, {excludeId:1}, function (e, result) {
+			      }, {noStore:true}, function (e, result) {
 			        writeData();
 
 			      });
@@ -1042,5 +1149,7 @@ it('should handle sequences of events by when the previous one is done', functio
 
 		});
   });
+
+*/
 
 });
