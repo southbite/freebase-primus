@@ -101,6 +101,8 @@ describe('e2e test', function() {
 		}
 	});
 
+	/*
+
 	it('the publisher should set new data ', function(callback) {
 		
 		this.timeout(default_timeout);
@@ -933,6 +935,8 @@ describe('e2e test', function() {
   });
 
 
+*/
+
 it('should handle sequences of events by when the previous one is done', function (callback) {
 
     this.timeout(120000);
@@ -956,7 +960,7 @@ it('should handle sequences of events by when the previous one is done', functio
 			    }
 
 			    //first listen for the change
-			    listenerclient.on('/e2e_test1/testsubscribe/sequence1', 'PUT', 0, function (e, message) {
+			    stressTestClient.on('/e2e_test1/testsubscribe/sequence1', 'PUT', 0, function (e, message) {
 
 			      ////////console.log('Event happened', message);
 
@@ -1005,6 +1009,8 @@ it('should handle sequences of events by when the previous one is done', functio
 		});
   });
 
+/*
+
 	it('should fail to subscribe to an event', function(callback) {
 
 		this.timeout(default_timeout);
@@ -1046,4 +1052,6 @@ it('should handle sequences of events by when the previous one is done', functio
     	});
 
 	});
+
+*/
 });
