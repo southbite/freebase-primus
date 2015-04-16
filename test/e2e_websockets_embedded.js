@@ -72,11 +72,10 @@ describe('e2e test', function() {
 
 				publisherclient = client;
 
-
 				if (e)
 					return callback(e);
 
-				  
+				freebase_client.load({config:{host:'localhost', port:testport, secret:test_secret}}, function(e, client){
 
 					if (e)
 						return callback(e);
