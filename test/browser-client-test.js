@@ -1,7 +1,9 @@
 var expect = require('expect.js');
 var freebase = require('../lib/index')
 var service = freebase.service;
-var config  = require('./config');
+var freebase_client = freebase.client;
+var faye = require('faye');
+var async = require('async');
 var request = require('request');
 
 describe('browser client tests', function() {
@@ -10,7 +12,7 @@ describe('browser client tests', function() {
 	var test_secret = 'test_secret';
 
 	/*
-	This test demonstrates starting up the freebase service - with 5 worker processes
+	This test demonstrates starting up the freebase service - 
 	the authentication service will use authTokenSecret to encrypt web tokens identifying
 	the logon session. The utils setting will set the system to log non priority information
 	*/
@@ -20,27 +22,42 @@ describe('browser client tests', function() {
 		this.timeout(20000);
 
 		try{
+			service.initialize({
+					mode:'embedded', 
+					services:{
+						auth:{
+							path:'./services/auth/service.js',
+							config:{
+								authTokenSecret:'a256a2fd43bf441483c5177fc85fd9d3',
+								systemSecret:test_secret
+							}
+						},
+						data:{
+							path:'./services/data_embedded/service.js',
+							config:{}
+						},
+						pubsub:{
+							path:'./services/pubsub/service.js',
+							config:{}
+						}
+					},
+					utils:{
+						log_level:'info|error|warning',
+						log_component:'prepare'
+					}
+				}, 
+				function(e, freebase){
+					if (e)
+						return callback(e);
 
-			service.initialize({size:1, port:testport, services:{
-				auth:{authTokenSecret:'a256a2fd43bf441483c5177fc85fd9d3',
-				systemSecret:test_secret},
-				utils:{log_level:'info|error|warning'}
-			}}, function(e){
-				callback(e);
-			});
-
+					freebaseInstance = freebase;
+					callback();
+				});
 		}catch(e){
 			callback(e);
 		}
 	});
 
-	var publisherclient;
-	var listenerclient;
-
-	/*
-	We are initializing 2 clients to test saving data against the database, one client will push data into the 
-	database whilst another listens for changes.
-	*/
 
 	it('should fetch the browser client', function(callback) {
 		

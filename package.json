@@ -21,6 +21,7 @@
     "nedb": "^1.1.1",
     "primus": "^3.0.2",
     "request": "^2.53.0",
+    "serve-static": "^1.9.2",
     "shortid": "^2.2.1",
     "traverse": "^0.6.6",
     "underscore": "^1.8.2",
