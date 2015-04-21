@@ -1405,5 +1405,66 @@ describe('e2e test', function () {
     }
   });
 
+  it('should only publish diff changes', function (done) {
+    this.timeout(default_timeout);
+
+    try {
+
+      publisherclient.set('/e2e_test1/testMerge',
+        {
+          property1: {sub_property1: 'sub_property1'},
+          property2: 'property2',
+          property3: 'property3'
+        }
+        , null, function (e, result) {
+          listenerclient.on('/e2e_test1/testMerge', 'PUT', 1, function (e, message) {
+
+            expect(message.path).to.be('/e2e_test1/testMerge');
+            expect(message.data).to.eql({property1: {sub_property1: 'sub_property1_new'}});
+            publisherclient.get('/e2e_test1/testMerge', null, function (e, results) {
+              expect(results.data).to.eql({
+                property1: {sub_property1: 'sub_property1_new'},
+                property2: 'property2',
+                property3: 'property3'
+              });
+              done(e);
+            });
+
+
+          }, function (e) {
+
+
+            if (!e) {
+              publisherclient.merge('/e2e_test1/testMerge',
+                {
+                  property1: {sub_property1: 'sub_property1'},
+                  property2: 'property2',
+                  property3: 'property3'
+                }, null, function (e, result) {
+                publisherclient.merge('/e2e_test1/testMerge',
+                  {
+                    property1: {sub_property1: 'sub_property1_new'},
+                    property3: 'property3'
+                  }, null, function (e, result) {
+
+                });
+              });
+
+
+              //then make the change
+
+            }
+            else
+              done(e);
+          });
+        });
+
+      //first listen for the change
+
+    } catch (e) {
+      done(e);
+    }
+  });
+
 
 });
