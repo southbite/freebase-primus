@@ -103,13 +103,13 @@ async.series([
 			      sent[i] = require('shortid').generate();
 			    }
 
-			    //////console.log('about to go');
-			    //////console.log(sent);
+			    //////////console.log('about to go');
+			    //////////console.log(sent);
 
 			    //first listen for the change
-			    stressTestClient.on('/e2e_test1/testsubscribe/sequence', 'PUT', 0, function (e, message) {
+			    stressTestClient.on('/e2e_test1/testsubscribe/sequence', 'set', 0, function (e, message) {
 
-			      //////console.log('Event happened', message);
+			      //////////console.log('Event happened', message);
 
 			      if (e)
 			      	return callback(e);
@@ -121,41 +121,41 @@ async.series([
 			      else
 			      	received[message.data.property1] = 1;
 
-			      //////console.log('RCOUNT');
+			      //////////console.log('RCOUNT');
 
 
-			      //console.log(receivedCount);
-			      //console.log(sent.length);
+			      //////console.log(receivedCount);
+			      //////console.log(sent.length);
 
 			      if (receivedCount == sent.length) {
 			        console.timeEnd('timeTest');
 			        expect(Object.keys(received).length == expected).to.be(true);
-			        //////console.log(received);
+			        //////////console.log(received);
 
 			        callback(null, 'should handle sequences of events by writing as soon as possible');
 			      }
 			      
 			    }, function (e) {
 
-			      //////console.log('ON HAS HAPPENED: ' + e);
+			      //////////console.log('ON HAS HAPPENED: ' + e);
 
 			      if (!e) {
 
-			      	 expect(stressTestClient.events['/PUT@/e2e_test1/testsubscribe/sequence'].length).to.be(1);
+			      	 expect(stressTestClient.events['/SET@/e2e_test1/testsubscribe/sequence'].length).to.be(1);
 			      	 console.time('timeTest');
 
 			      	 while(count < expected){
 
-			      	 	//////console.log(count);
-			      	 	//////console.log(expected);
-			      	 	//////console.log(sent[count]);
+			      	 	//////////console.log(count);
+			      	 	//////////console.log(expected);
+			      	 	//////////console.log(sent[count]);
 
 				      publisherclient.set('/e2e_test1/testsubscribe/sequence', {
 				        property1: sent[count]
 				      }, {excludeId:true}, function (e, result) {
 
-				      	//////console.log(e);
-				      	//////console.log(result);
+				      	//////////console.log(e);
+				      	//////////console.log(result);
 
 				      	if (e)
 				      		return callback(e);
@@ -190,13 +190,13 @@ async.series([
 	      sent[i] = require('shortid').generate();
 	    }
 
-	    //////console.log('about to go');
-	    //////console.log(sent);
+	    //////////console.log('about to go');
+	    //////////console.log(sent);
 
 	    //first listen for the change
-	    stressTestClient.on('/e2e_test1/testsubscribe/sequence3', 'PUT', 0, function (e, message) {
+	    stressTestClient.on('/e2e_test1/testsubscribe/sequence3', 'set', 0, function (e, message) {
 
-	      //////console.log('Event happened', message);
+	      //////////console.log('Event happened', message);
 
 	      if (e)
 	      	return callback(e);
@@ -208,41 +208,41 @@ async.series([
 	      else
 	      	received[message.data.property1] = 1;
 
-	      //////console.log('RCOUNT');
+	      //////////console.log('RCOUNT');
 
 
-	      //console.log(receivedCount);
-	      //console.log(sent.length);
+	      //////console.log(receivedCount);
+	      //////console.log(sent.length);
 
 	      if (receivedCount == sent.length) {
 	        console.timeEnd('timeTest');
 	        expect(Object.keys(received).length == expected).to.be(true);
-	        //////console.log(received);
+	        //////////console.log(received);
 
 	        callback(null,'should handle sequences of events by writing as soon as possible, without storing');
 	      }
 	      
 	    }, function (e) {
 
-	      //////console.log('ON HAS HAPPENED: ' + e);
+	      //////////console.log('ON HAS HAPPENED: ' + e);
 
 	      if (!e) {
 
-	      	 expect(stressTestClient.events['/PUT@/e2e_test1/testsubscribe/sequence3'].length).to.be(1);
+	      	 expect(stressTestClient.events['/SET@/e2e_test1/testsubscribe/sequence3'].length).to.be(1);
 	      	 console.time('timeTest');
 
 	      	 while(count < expected){
 
-	      	 	//////console.log(count);
-	      	 	//////console.log(expected);
-	      	 	//////console.log(sent[count]);
+	      	 	//////////console.log(count);
+	      	 	//////////console.log(expected);
+	      	 	//////////console.log(sent[count]);
 
 		      publisherclient.set('/e2e_test1/testsubscribe/sequence3', {
 		        property1: sent[count]
 		      }, {noStore:true}, function (e, result) {
 
-		      	//////console.log(e);
-		      	//////console.log(result);
+		      	//////////console.log(e);
+		      	//////////console.log(result);
 
 		      	if (e)
 		      		return callback(e);
@@ -271,9 +271,9 @@ function(callback){
     }
 
     //first listen for the change
-    listenerclient.on('/e2e_test1/testsubscribe/sequence1', 'PUT', 0, function (e, message) {
+    listenerclient.on('/e2e_test1/testsubscribe/sequence1', 'set', 0, function (e, message) {
 
-      //console.log('Event happened', message);
+      //////console.log('Event happened', message);
 
       received.push(message.data.property1);
 
@@ -286,11 +286,11 @@ function(callback){
 
     }, function (e) {
 
-      //////////////console.log('ON HAS HAPPENED: ' + e);
+      //////////////////console.log('ON HAS HAPPENED: ' + e);
 
       if (!e) {
 
-        //////////////console.log('on subscribed, about to publish');
+        //////////////////console.log('on subscribed, about to publish');
         //then make the change
         console.time('timeTest');
         writeData();
@@ -305,7 +305,7 @@ function(callback){
         return;
       };
 
-      ////////console.log('putting data: ', count);
+      ////////////console.log('putting data: ', count);
       publisherclient.set('/e2e_test1/testsubscribe/sequence1', {
         property1: sent[count++]
       }, {noStore:true}, function (e, result) {
@@ -316,7 +316,7 @@ function(callback){
 // optional callback
 function(err, results){
 	if (!err)
-     console.log(results);
+     ////console.log(results);
  	else
  	 console.error(err);
 });

@@ -10,14 +10,13 @@ describe('e2e test', function () {
   var testport = 8000;
   var test_secret = 'test_secret';
   var mode = "embedded";
-  var default_timeout = 100000;
-  var freebaseInstance = null;
+  var default_timeout = 10000;
 
   /*
-   This test demonstrates starting up the freebase service -
-   the authentication service will use authTokenSecret to encrypt web tokens identifying
-   the logon session. The utils setting will set the system to log non priority information
-   */
+  This test demonstrates starting up the freebase service - 
+  the authentication service will use authTokenSecret to encrypt web tokens identifying
+  the logon session. The utils setting will set the system to log non priority information
+  */
 
   it('should initialize the service', function(callback) {
     
@@ -48,12 +47,8 @@ describe('e2e test', function () {
             log_component:'prepare'
           }
         }, 
-        function(e, freebase){
-          if (e)
-            return callback(e);
-
-          freebaseInstance = freebase;
-          callback();
+        function(e){
+          callback(e);
         });
     }catch(e){
       callback(e);
@@ -73,14 +68,14 @@ describe('e2e test', function () {
 
     try{
       //plugin, config, context, 
-      freebase_client.load({plugin:freebase.client_plugins.intra_process, context:freebaseInstance}, function(e, client){
+      freebase_client.load({config:{host:'localhost', port:testport, secret:test_secret}}, function(e, client){
+
+        publisherclient = client;
 
         if (e)
           return callback(e);
 
-        publisherclient = client;
-
-        freebase_client.load({plugin:freebase.client_plugins.intra_process, context:freebaseInstance}, function(e, client){
+        freebase_client.load({config:{host:'localhost', port:testport, secret:test_secret}}, function(e, client){
 
           if (e)
             return callback(e);
@@ -102,14 +97,96 @@ describe('e2e test', function () {
     }
   });
 
-  it('should handle sequences of events by writing as soon as possible, and ensure the events push the correct data values back', function (callback) {
+  it('should handle sequences of events by writing as soon as possible, without storing', function (callback) {
 
     this.timeout(default_timeout);
 
-    freebase_client.load({
-      plugin: freebase.client_plugins.intra_process,
-      context: freebaseInstance
-    }, function (e, client) {
+    freebase_client.load({config:{host:'localhost', port:testport, secret:test_secret}}, function (e, client) {
+
+      if (e)
+        return callback(e);
+
+      var stressTestClient = client;
+
+      setTimeout(function () {
+
+        var count = 0;
+        var expected = 1000;
+        var receivedCount = 0;
+        var timerName = expected + 'Events - no wait - no store';
+
+        //first listen for the change
+        stressTestClient.on('/e2e_test1/testsubscribe/sequence1', 'set', 0, function (e, message) {
+
+          //////console.log('Event happened', message);
+
+          if (e)
+            return callback(e);
+
+          receivedCount++;
+
+          /*
+           if (received[message.data.property1])
+           received[message.data.property1] = received[message.data.property1] + 1;
+           else
+           received[message.data.property1] = 1;
+           */
+          //////console.log('RCOUNT');
+
+
+          //console.log(receivedCount);
+          //console.log(sent.length);
+
+          if (receivedCount == expected) {
+            console.timeEnd(timerName);
+            //expect(Object.keys(received).length == expected).to.be(true);
+            //////console.log(received);
+
+            callback();
+          }
+
+        }, function (e) {
+
+          //////console.log('ON HAS HAPPENED: ' + e);
+
+          if (!e) {
+
+            //expect(stressTestClient.events['/PUT@/e2e_test1/testsubscribe/sequence'].length).to.be(1);
+            console.time(timerName);
+
+            function writeData() {
+
+              if (count == expected) {
+                return;
+              }
+
+              ////////console.log('putting data: ', count);
+              publisherclient.set('/e2e_test1/testsubscribe/sequence1', {
+                property1: count++
+              }, {noStore: true}, function (e, result) {
+                writeData();
+              });
+            }
+
+            writeData();
+
+          }
+          else
+            callback(e);
+        });
+
+      }, 2000)
+
+
+    });
+
+  });
+
+  it('should handle sequences of events by writing as soon as possible - not persisting, using noStore - and ensure the events push the correct data values back', function (callback) {
+
+    this.timeout(default_timeout);
+
+    freebase_client.load({config:{host:'localhost', port:testport, secret:test_secret}}, function (e, client) {
 
       if (e)
         return callback(e);
@@ -133,7 +210,7 @@ describe('e2e test', function () {
         //////console.log(sent);
 
         //first listen for the change
-        stressTestClient.on('/e2e_test1/testsubscribe/sequence', 'set', 0, function (e, message) {
+        stressTestClient.on('/e2e_test1/testsubscribe/sequence_nostore', 'set', 0, function (e, message) {
 
           //////console.log('Event happened', message);
 
@@ -167,7 +244,7 @@ describe('e2e test', function () {
 
           if (!e) {
 
-            expect(stressTestClient.events['/SET@/e2e_test1/testsubscribe/sequence'].length).to.be(1);
+            expect(stressTestClient.events['/SET@/e2e_test1/testsubscribe/sequence_nostore'].length).to.be(1);
             console.time('timeTest1');
 
             while (count < expected) {
@@ -176,7 +253,103 @@ describe('e2e test', function () {
               //////console.log(expected);
               //////console.log(sent[count]);
 
-              publisherclient.set('/e2e_test1/testsubscribe/sequence', {
+              publisherclient.set('/e2e_test1/testsubscribe/sequence_nostore', {
+                property1: sent[count]
+              }, {noStore: true}, function (e, result) {
+
+                //////console.log(e);
+                //////console.log(result);
+
+                if (e)
+                  return callback(e);
+
+
+              });
+
+              count++;
+            }
+
+          }
+          else
+            callback(e);
+        });
+
+      }, 2000)
+    });
+  });
+
+  it('should handle sequences of events by writing as soon as possible - persisting, and ensure the events push the correct data values back', function (callback) {
+
+    this.timeout(default_timeout);
+
+    freebase_client.load({config:{host:'localhost', port:testport, secret:test_secret}}, function (e, client) {
+
+      if (e)
+        return callback(e);
+
+      var stressTestClient = client;
+
+      setTimeout(function () {
+
+        var count = 0;
+        var expected = 1000;
+        var receivedCount = 0;
+
+        var received = {};
+        var sent = [expected];
+
+        for (var i = 0; i < expected; i++) {
+          sent[i] = require('shortid').generate();
+        }
+
+        //////console.log('about to go');
+        //////console.log(sent);
+
+        //first listen for the change
+        stressTestClient.on('/e2e_test1/testsubscribe/sequence_persist', 'set', 0, function (e, message) {
+
+          //////console.log('Event happened', message);
+
+          if (e)
+            return callback(e);
+
+          receivedCount++;
+
+          if (received[message.data.property1])
+            received[message.data.property1] = received[message.data.property1] + 1;
+          else
+            received[message.data.property1] = 1;
+
+          //////console.log('RCOUNT');
+
+
+          //console.log(receivedCount);
+          //console.log(sent.length);
+
+          if (receivedCount == sent.length) {
+            console.timeEnd('timeTest1');
+            expect(Object.keys(received).length == expected).to.be(true);
+            //////console.log(received);
+
+            callback();
+          }
+
+        }, function (e) {
+
+          //////console.log('ON HAS HAPPENED: ' + e);
+
+          if (!e) {
+
+            expect(stressTestClient.events['/SET@/e2e_test1/testsubscribe/sequence_persist'].length).to.be(1);
+            console.time('timeTest1');
+
+            while (count < expected) {
+
+              //////console.log(count);
+              //////console.log(expected);
+              //////console.log(sent[count]);
+
+              publisherclient.set('/e2e_test1/testsubscribe/sequence_persist', {
                 property1: sent[count]
               }, {excludeId: true}, function (e, result) {
 
@@ -198,8 +371,6 @@ describe('e2e test', function () {
         });
 
       }, 2000)
-
-
     });
   });
 
@@ -207,10 +378,7 @@ describe('e2e test', function () {
 
     this.timeout(default_timeout);
 
-    freebase_client.load({
-      plugin: freebase.client_plugins.intra_process,
-      context: freebaseInstance
-    }, function (e, client) {
+    freebase_client.load({config:{host:'localhost', port:testport, secret:test_secret}}, function (e, client) {
 
       if (e)
         return callback(e);
@@ -299,94 +467,6 @@ describe('e2e test', function () {
 
 
     });
-  });
-
-  it('should handle sequences of events by writing as soon as possible, without storing', function (callback) {
-
-    this.timeout(default_timeout);
-
-    freebase_client.load({
-      plugin: freebase.client_plugins.intra_process,
-      context: freebaseInstance
-    }, function (e, client) {
-
-      if (e)
-        return callback(e);
-
-      var stressTestClient = client;
-
-      setTimeout(function () {
-
-        var count = 0;
-        var expected = 1000;
-        var receivedCount = 0;
-        var timerName = expected + 'Events - no wait - no store';
-
-        //first listen for the change
-        stressTestClient.on('/e2e_test1/testsubscribe/sequence1', 'set', 0, function (e, message) {
-
-          //////console.log('Event happened', message);
-
-          if (e)
-            return callback(e);
-
-          receivedCount++;
-
-          /*
-           if (received[message.data.property1])
-           received[message.data.property1] = received[message.data.property1] + 1;
-           else
-           received[message.data.property1] = 1;
-           */
-          //////console.log('RCOUNT');
-
-
-          //console.log(receivedCount);
-          //console.log(sent.length);
-
-          if (receivedCount == expected) {
-            console.timeEnd(timerName);
-            //expect(Object.keys(received).length == expected).to.be(true);
-            //////console.log(received);
-
-            callback();
-          }
-
-        }, function (e) {
-
-          //////console.log('ON HAS HAPPENED: ' + e);
-
-          if (!e) {
-
-            //expect(stressTestClient.events['/PUT@/e2e_test1/testsubscribe/sequence'].length).to.be(1);
-            console.time(timerName);
-
-            function writeData() {
-
-              if (count == expected) {
-                return;
-              }
-
-              ////////console.log('putting data: ', count);
-              publisherclient.set('/e2e_test1/testsubscribe/sequence1', {
-                property1: count++
-              }, {noStore: true}, function (e, result) {
-                writeData();
-              });
-            }
-
-            writeData();
-
-          }
-          else
-            callback(e);
-        });
-
-      }, 2000)
-
-
-    });
-
   });
 
   it('should handle sequences of events by when the previous one is done', function (callback) {
