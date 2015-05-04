@@ -4,14 +4,14 @@ FREEBASE
 Introduction
 -------------------------
 
-Freebase is an attempt at getting the same kind of functionality that [firebase](https://www.firebase.com/) offers, but it is free. It is a bit different from firebase in terms of it being a searchable key/value store, instead of arranging the data like one big json tree, like firebase does...
+Freebase is an attempt at getting the same kind of functionality that [firebase](https://www.firebase.com/) offers, but it is free. It is a bit different from firebase in terms of it being a searchable key/value store, instead of arranging the data like one big json tree, like firebase does.
 
 Firebase is fricking awesome - but sometimes priced a little out of the reach of certain projects, but if you have the money to throw at it, it is well worth investigating. 
 
-The aim of this framework however is to create an http/json api that sits on top of a mongo backend as the server, which also has pub/sub baked in - so you can subscribe to changes in the data via the client - which can be used from a browser thanks to [browserify](http://browserify.org), or from a node program, depending on how it is initialized.
+The aim of this framework however is to create an http/json api that sits on top of a mongo backend as the server, which also has pub/sub baked in - so you can subscribe to changes in the data via the client - which can be used from a browser or from a node program, depending on how it is initialized.
 
 Technologies used:
-Freebase uses [faye](http://faye.jcoglan.com/) for its pub/sub framework and mongo or nedb depending on the mode it is running in as its data store, the API uses [connect](https://github.com/senchalabs/connect), the client uses jquery or request.js depending on whether it is running in the browser.
+Freebase uses [Primus](https://github.com/primus/primus) to power websockets for its pub/sub framework and mongo or nedb depending on the mode it is running in as its data store, the API uses [connect](https://github.com/senchalabs/connect).
 
 The system uses [jwt](https://github.com/hokaccha/node-jwt-simple) to secure session state between calls.
 
@@ -31,10 +31,14 @@ cluster:
 You can specify how many worker processes you want the system to use, so we can scale to multicore machines.
 You need a redis instance and a mongo instance for this mode, this is because Faye uses it's redis engine to keep state across clustered instances of the Freebase worker process.
 
+CLUSTER AINT WORKING ANYMORE - DUE TO MIGRATION TO MIGRATION AND FULL DUPLEX WEBSOCKETS... Busy fixing.
+
 single process:
 ---------------
 
 The system runs as a single process, but still needs a mongo db instance running for storing data.
+
+SINGLE PROCESS AINT WORKING ANYMORE - DUE TO MIGRATION TO MIGRATION AND FULL DUPLEX WEBSOCKETS... Busy fixing.
 
 additional info
 ---------------
@@ -62,7 +66,7 @@ I havent had the time to join npm yet, so add the following dependancy to your p
 
 ```javascript
 "dependencies": {
-    "freebase": "git+https://github.com/southbite/freebase.git"
+    "freebase": "git+https://github.com/southbite/freebase-primus.git"
   }
 ```
 To get the latest freebase files run:
@@ -74,40 +78,42 @@ To start up a freebase, add following to your main.js:
 -------------------------------------------------------
 
 ```javascript
-var freebase = require('freebase')
+var freebase = require('../lib/index')
 var service = freebase.service;
+var freebase_client = freebase.client;
 
+//runs off port 8000 by default
 //Embedded mode (no external databases necessary): 
-service.initialize({services:{
-	auth:{
-		authTokenSecret:'a256a2fd43bf441483c5177fc85fd9d3',
-		systemSecret:test_secret
+service.initialize(
+{mode:'embedded', 
+	services:{
+		auth:{
+			path:'./services/auth/service.js',
+			config:{
+				authTokenSecret:'a256a2fd43bf441483c5177fc85fd9d3',
+				systemSecret:'test_secret'
+			}
+		},
+		data:{
+			path:'./services/data_embedded/service.js',
+			config:{}
+		},
+		pubsub:{
+			path:'./services/pubsub/service.js',
+			config:{}
+		}
 	},
-	data:{
-		mode:'embedded'
+	utils:{
+		log_level:'info|error|warning',
+		log_component:'prepare'
 	}
-}}, function(e){
+}, 
+function(e){
 	callback(e);
 });
 
 //Cluster mode (needs redis and mongo): 
-service.initialize({mode:'cluster', size:2, port:testport, services:{
-	auth:{authTokenSecret:'a256a2fd43bf441483c5177fc85fd9d3',
-	systemSecret:test_secret}
-}}, function(e){
-	callback(e);
-});
-
-//single process mode 
-service.initialize({port:testport, services:{
-	auth:{
-		authTokenSecret:'a256a2fd43bf441483c5177fc85fd9d3',
-		systemSecret:test_secret
-	},
-	data:{}
-}}, function(e){
-	callback(e);
-});
+[TBD]
 
 ```
 
@@ -123,34 +129,29 @@ Using node:
  var freebase_client = freebase.client; 
  var my_client_instance; 
 
- 	freebase_client.newClient({host:'localhost', 
-						  port:80, 
-						  secret:'my test secret'}, function(e, my_client_instance){
-
-						  //if no e, then you have been passed back a client in the client variable
-						  if (!e)
-						  	my_client_instance.get...
+ 	my_client_instance = new freebase.client({config:{host:'localhost', port:testport, secret:test_secret}}, function(e){
+        callback(e);
+    });
 
 ```
 
 To use the browser client, make sure the server is running, and reference the client javascript with the url pointing to the running server instances port and ip address like so:
 
 ```html
-<script type="text/javascript" src="http://localhost:80/browser_client"></script>
+<script type="text/javascript" src="http://localhost:8000/browser_client"></script>
 <script>
-//Thanks to the magic of browserify.org the browser client works exactly the same way as what the node client does, and can immediately be referenced like this:
 
-	FreebaseBrowserClient.newClient({host:'localhost', port:80, secret:'my test secret'}, function(e, my_client_instance){
+var my_client_instance; 
 
-               if (!e){
+my_client_instance = new freebase.client({config:{host:'localhost', port:testport, secret:test_secret}}, function(e){
+	if (e) throw e;
 
-               	//instance.get...
-               	//instance.set...
-               	//instance.on...
+	//my_client_instance.get...
+    //my_client_instance.set...
+    //my_client_instance.on...
 
-               }
+});
 
-    });
 </script>
 ```
 
@@ -160,13 +161,15 @@ PUT
 *Puts the json in the branch e2e_test1/testsubscribe/data, creates the branch if it does not exist*
 
 ```javascript
-my_client_instance.set('e2e_test1/testsubscribe/data', //the path you want to push your data to
-	{property1:'property1',property2:'property2',property3:'property3'}, //your data
-	{merge:true}, //options - can be null
-	function(e, result){	
-		if (!e){
-			//successful
-			console.log(result.payload);//payload is an object with the result with an _id and containing a [data] property with yr uploaded data
+
+//the noPublish parameter means this data change wont be published to other subscribers, it is false by default
+//there are a bunch other parameters - like noStore (the json isnt persisted, but the message is published)
+
+my_client_instance.set('e2e_test1/testsubscribe/data/', {property1:'property1',property2:'property2',property3:'property3'}, {noPublish:true}, function(e, result){
+
+	
+
+});
 
 ```
 
@@ -276,13 +279,13 @@ my_client_instance.setChild('/e2e_test1/testsubscribe/data/catch_all_array', {pr
 EVENTS
 ----------------------------
 
-*You can listen to any PUT, POST and DELETE events happeneing in your data - you can specifiy a path you want to listen on or you can listen to all PUT, POST and DELETE using a catch-all listener*
+*You can listen to any SET & REMOVE events happeneing in your data - you can specifiy a path you want to listen on or you can listen to all PUT, POST and DELETE using a catch-all listener*
 
 Specific listener:
 ```javascript
 my_client_instance.on('/e2e_test1/testsubscribe/data/delete_me', //the path you are listening on
-					  'DELETE', //either PUT,POST,DELETE
-					  1, //how many times you want your listener event handler to fire - in this case your listener function will only fire once
+					  {event_type:'remove', // either set, remove or all - defaults to all
+					   count:0},// how many times you want your handler to handle for before it is removed - default is 0 (infinity)
 					  function(e, message){ //your listener event handler
 ```
 
@@ -290,7 +293,7 @@ Catch all listener:
 ```javascript
 my_client_instance.onAll(function(e, message){
 
-			//message consists of action property - POST,PUT, DELETE
+			//message consists of action property - set, remove
 			//and payload property - the actual data that got PUT, POSTED - or the _id of the data that got DELETED
 
 
@@ -308,6 +311,19 @@ TAGGING
 var randomTag = require('shortid').generate();
 
 my_client_instance.set('e2e_test1/test/tag', {property1:'property1',property2:'property2',property3:'property3'}, {tag:randomTag}, function(e, result){
+
+```
+
+MERGING
+----------------------------
+
+*You can do a set command and specify that you want to merge the json you are pushing with the existing dataset, this means any existing values that are not in the set json but exist in the database are persisted and not overwritten*
+
+```javascript
+
+my_client_instance.set('e2e_test1/testsubscribe/data/', {property1:'property1',property2:'property2',property3:'property3'}, {merge:true}, function(e, result){
+
+});
 
 ```
 
