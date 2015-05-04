@@ -197,7 +197,7 @@ describe('e2e test', function() {
 					//////////////console.log('did delete set');
 					//path, event_type, count, handler, done
 					//We listen for the DELETE event
-					listenerclient.on('/e2e_test1/testsubscribe/data/delete_me', 'remove', 1, function(e, eventData){
+					listenerclient.on('/e2e_test1/testsubscribe/data/delete_me', {event_type:'remove', count:1}, function(e, eventData){
 
 						//////////////console.log('delete message');
 						//////////////console.log(message);
@@ -494,7 +494,7 @@ describe('e2e test', function() {
 		try{
 
 			//first listen for the change
-			listenerclient.on('/e2e_test1/testsubscribe/data/event', 'set', 1, function(e, message){
+			listenerclient.on('/e2e_test1/testsubscribe/data/event', {event_type:'set', count:1}, function(e, message){
 
 				expect(listenerclient.events['/SET@/e2e_test1/testsubscribe/data/event'].length).to.be(0);
 				callback(e);
@@ -655,7 +655,7 @@ describe('e2e test', function() {
 		try{
 
 			//first listen for the change
-			listenerclient.on('/e2e_test1/testsubscribe/data/event', 'set', 1, function(e, message){
+			listenerclient.on('/e2e_test1/testsubscribe/data/event', {event_type:'set', count:1}, function(e, message){
 
 				expect(listenerclient.events['/SET@/e2e_test1/testsubscribe/data/event'].length).to.be(0);
 				callback(e);

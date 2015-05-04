@@ -113,7 +113,7 @@ it('should initialize the clients', function(callback) {
       });
     }
 
-    stressTestClient.on('/e2e_test1/testsubscribe/sequence5', 'set', 0, function (e, message) {
+    stressTestClient.on('/e2e_test1/testsubscribe/sequence5', {event_type:'set'}, function (e, message) {
 
         ////console.log(arguments);
 
@@ -164,7 +164,7 @@ it('should initialize the clients', function(callback) {
     }
 //path, event_type, count, handler, done
     //first listen for the change
-    listenerclient.on('/e2e_test1/testsubscribe/sequence3', 'set', 0, function (e, message) {
+    listenerclient.on('/e2e_test1/testsubscribe/sequence3',{event_type:'set'}, function (e, message) {
  
       ////console.log('Event happened', message);
       receivedCount++;
@@ -208,7 +208,7 @@ it('should initialize the clients', function(callback) {
       var timerName = expected + 'Events - no wait - no store';
 
       //first listen for the change
-      stressTestClient.on('/e2e_test1/testsubscribe/sequence1', 'set', 0, function (e, message) {
+      stressTestClient.on('/e2e_test1/testsubscribe/sequence1',{event_type:'set'}, function (e, message) {
 
         //////////console.log('Event happened', message);
 
@@ -290,7 +290,7 @@ it('should initialize the clients', function(callback) {
         //////////console.log(sent);
 
         //first listen for the change
-        stressTestClient.on('/e2e_test1/testsubscribe/sequence_nostore', 'set', 0, function (e, message) {
+        stressTestClient.on('/e2e_test1/testsubscribe/sequence_nostore',{event_type:'set'}, function (e, message) {
 
           //////////console.log('Event happened', message);
 
@@ -380,7 +380,7 @@ it('should initialize the clients', function(callback) {
       //////////console.log(sent);
 
       //first listen for the change
-      stressTestClient.on('/e2e_test1/testsubscribe/sequence_persist', 'set', 0, function (e, message) {
+      stressTestClient.on('/e2e_test1/testsubscribe/sequence_persist',{event_type:'set'}, function (e, message) {
 
         //////////console.log('Event happened', message);
 
@@ -458,7 +458,7 @@ it('should initialize the clients', function(callback) {
       var receivedCount = 0;
       var timerName = expected + 'Events - no wait';
 
-      stressTestClient.on('/e2e_test1/testsubscribe/sequence4', 'set', 0, function (e, message) {
+      stressTestClient.on('/e2e_test1/testsubscribe/sequence4',{event_type:'set'}, function (e, message) {
 
         if (e)
           return callback(e);
@@ -504,7 +504,7 @@ it('should initialize the clients', function(callback) {
     var receivedCount = 0;
     var timerName = expected + 'Events';
 
-    listenerclient.on('/e2e_test1/testsubscribe/sequence32', 'set', 0, function (e, message) {
+    listenerclient.on('/e2e_test1/testsubscribe/sequence32',{event_type:'set'}, function (e, message) {
 
        if (e)
           return callback(e);
@@ -560,7 +560,7 @@ it('should initialize the clients', function(callback) {
         });
       }
 
-      stressTestClient.on('/e2e_test1/testsubscribe/sequence5', 'set', 0, function (e, message) {
+      stressTestClient.on('/e2e_test1/testsubscribe/sequence5',{event_type:'set'}, function (e, message) {
 
         ////console.log(arguments);
 
@@ -596,7 +596,7 @@ it('should handle sequences of events by when the previous one is done', functio
     var receivedCount = 0;
     var timerName = expected + 'Events';
 
-    listenerclient.on('/e2e_test1/testsubscribe/sequence31', 'set', 0, function (e, message) {
+    listenerclient.on('/e2e_test1/testsubscribe/sequence31',{event_type:'set'}, function (e, message) {
 
        if (e)
           return callback(e);
@@ -653,7 +653,7 @@ it('should handle sequences of events by when the previous one is done', functio
         });
       }
 
-      stressTestClient.on('/e2e_test1/testsubscribe/sequence5', 'set', 0, function (e, message) {
+      stressTestClient.on('/e2e_test1/testsubscribe/sequence5',{event_type:'set'}, function (e, message) {
 
         ////console.log(arguments);
 
