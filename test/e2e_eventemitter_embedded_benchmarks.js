@@ -113,13 +113,9 @@ describe('e2e test', function () {
       });
     }
 
-    stressTestClient.on('/e2e_test1/testsubscribe/sequence5',{event_type:'set', count:0}, function (e, message) {
+    stressTestClient.on('/e2e_test1/testsubscribe/sequence5',{event_type:'set', count:0}, function (message) {
 
-        ////console.log(arguments);
-
-        if (e)
-          return callback(e);
-
+  
         receivedCount++;
 
         if (receivedCount == expected) {
@@ -164,7 +160,7 @@ describe('e2e test', function () {
     }
 //path, event_type, count, handler, done
     //first listen for the change
-    listenerclient.on('/e2e_test1/testsubscribe/sequence3',{event_type:'set', count:0}, function (e, message) {
+    listenerclient.on('/e2e_test1/testsubscribe/sequence3',{event_type:'set', count:0}, function (message) {
  
       ////console.log('Event happened', message);
       receivedCount++;
@@ -208,13 +204,9 @@ describe('e2e test', function () {
       var timerName = expected + 'Events - no wait - no store';
 
       //first listen for the change
-      stressTestClient.on('/e2e_test1/testsubscribe/sequence1',{event_type:'set', count:0}, function (e, message) {
+      stressTestClient.on('/e2e_test1/testsubscribe/sequence1',{event_type:'set', count:0}, function (message) {
 
-        //////////console.log('Event happened', message);
-
-        if (e)
-          return callback(e);
-
+       
         receivedCount++;
         //////////console.log('RCOUNT');
 
@@ -290,19 +282,16 @@ describe('e2e test', function () {
         //////////console.log(sent);
 
         //first listen for the change
-        stressTestClient.on('/e2e_test1/testsubscribe/sequence_nostore',{event_type:'set', count:0}, function (e, message) {
+        stressTestClient.on('/e2e_test1/testsubscribe/sequence_nostore',{event_type:'set', count:0}, function (message) {
 
           //////////console.log('Event happened', message);
 
-          if (e)
-            return callback(e);
-
           receivedCount++;
 
-          if (received[message.data.property1])
-            received[message.data.property1] = received[message.data.property1] + 1;
+          if (received[message.payload.data.property1])
+            received[message.payload.data.property1] = received[message.payload.data.property1] + 1;
           else
-            received[message.data.property1] = 1;
+            received[message.payload.data.property1] = 1;
 
           //////////console.log('RCOUNT');
 
@@ -380,19 +369,15 @@ describe('e2e test', function () {
       //////////console.log(sent);
 
       //first listen for the change
-      stressTestClient.on('/e2e_test1/testsubscribe/sequence_persist',{event_type:'set', count:0}, function (e, message) {
+      stressTestClient.on('/e2e_test1/testsubscribe/sequence_persist',{event_type:'set', count:0}, function (message) {
 
-        //////////console.log('Event happened', message);
-
-        if (e)
-          return callback(e);
 
         receivedCount++;
 
-        if (received[message.data.property1])
-          received[message.data.property1] = received[message.data.property1] + 1;
+        if (received[message.payload.data.property1])
+          received[message.payload.data.property1] = received[message.payload.data.property1] + 1;
         else
-          received[message.data.property1] = 1;
+          received[message.payload.data.property1] = 1;
 
         //////////console.log('RCOUNT');
 
@@ -458,10 +443,7 @@ describe('e2e test', function () {
       var receivedCount = 0;
       var timerName = expected + 'Events - no wait';
 
-      stressTestClient.on('/e2e_test1/testsubscribe/sequence4',{event_type:'set', count:0}, function (e, message) {
-
-        if (e)
-          return callback(e);
+      stressTestClient.on('/e2e_test1/testsubscribe/sequence4',{event_type:'set', count:0}, function (message) {
 
         receivedCount++;
 
@@ -504,10 +486,9 @@ describe('e2e test', function () {
     var receivedCount = 0;
     var timerName = expected + 'Events';
 
-    listenerclient.on('/e2e_test1/testsubscribe/sequence32',{event_type:'set', count:0}, function (e, message) {
+    listenerclient.on('/e2e_test1/testsubscribe/sequence32',{event_type:'set', count:0}, function (message) {
 
-       if (e)
-          return callback(e);
+       
 
       receivedCount++;
 
@@ -560,12 +541,9 @@ describe('e2e test', function () {
         });
       }
 
-      stressTestClient.on('/e2e_test1/testsubscribe/sequence5',{event_type:'set', count:0}, function (e, message) {
+      stressTestClient.on('/e2e_test1/testsubscribe/sequence5',{event_type:'set', count:0}, function (message) {
 
-        ////console.log(arguments);
-
-        if (e)
-          return callback(e);
+       
 
         receivedCount++;
 
@@ -596,10 +574,7 @@ it('should handle sequences of events by when the previous one is done', functio
     var receivedCount = 0;
     var timerName = expected + 'Events';
 
-    listenerclient.on('/e2e_test1/testsubscribe/sequence31',{event_type:'set', count:0}, function (e, message) {
-
-       if (e)
-          return callback(e);
+    listenerclient.on('/e2e_test1/testsubscribe/sequence31',{event_type:'set', count:0}, function (message) {
 
       receivedCount++;
 
@@ -653,12 +628,9 @@ it('should handle sequences of events by when the previous one is done', functio
         });
       }
 
-      stressTestClient.on('/e2e_test1/testsubscribe/sequence5',{event_type:'set', count:0}, function (e, message) {
+      stressTestClient.on('/e2e_test1/testsubscribe/sequence5',{event_type:'set', count:0}, function (message) {
 
-        ////console.log(arguments);
-
-        if (e)
-          return callback(e);
+       
 
         receivedCount++;
 

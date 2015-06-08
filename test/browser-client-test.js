@@ -72,7 +72,7 @@ describe('browser client tests', function() {
 
 						if (!e){
 							//console.log('got body!!!');
-							//console.log(b);
+							console.log(b);
 							callback();
 						}else
 							callback(e);
@@ -84,9 +84,5 @@ describe('browser client tests', function() {
 			callback(e);
 		}
 	});
-
-
-	
-	
 	
 });
